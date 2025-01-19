@@ -1,0 +1,9 @@
+# .gitignore
+
+Этот файл содержит список файлов, которые должны быть игнорированы при工作е с репозиторием.
+
+* src/main/api.js
+* src/models/model.js
+* src/utils/data_processing.js
+* node_modules/
+* doc/
