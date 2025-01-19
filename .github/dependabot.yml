@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "npm" # Укажите ваш пакетный менеджер (npm, pip, maven и т.д.)
+    directory: "/" # Корневая папка
+    schedule:
+      interval: "daily" # Ежедневные проверки обновлений
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
