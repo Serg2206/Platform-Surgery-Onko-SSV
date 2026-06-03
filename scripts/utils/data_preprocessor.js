@@ -26,10 +26,11 @@ class DataPreprocessor {
 
     // 1. One-hot encoding: sex, tumor_stage, surgery_type, neoadjuvant_therapy
     const categoricalCols = ['sex', 'tumor_stage', 'surgery_type', 'neoadjuvant_therapy'];
-    const colsToEncode = categoricalCols.filter(col => df.columnNames.includes(col));
+    const currentColumns = df.columns;
+    const colsToEncode = categoricalCols.filter(col => currentColumns.includes(col));
     
     if (colsToEncode.length > 0) {
-      df = df.oneHotEncode({ column: colsToEncode, prefix: colsToEncode });
+      df = dfd.getDummies(df, { columns: colsToEncode });
     }
 
     // 2. Выделение X и y
@@ -68,9 +69,14 @@ class DataPreprocessor {
    */
   async saveScaler(path) {
     if (this.scaler && this.fitted) {
-      const scalerJson = JSON.stringify(this.scaler.toJSON());
+      // В новых версиях danfojs-node метод toJSON() может отсутствовать у StandardScaler
+      // Сохраняем параметры вручную
+      const params = {
+        mean: this.scaler.$mean.arraySync(),
+        std: this.scaler.$std.arraySync()
+      };
       const fs = require('fs').promises;
-      await fs.writeFile(path, scalerJson);
+      await fs.writeFile(path, JSON.stringify(params));
       console.log(`Scaler saved to ${path}`);
     } else {
       console.error('Cannot save scaler: not fitted yet.');

@@ -8,7 +8,7 @@ module.exports = {
   
   // Параметры модели
   MODEL_ARCHITECTURE: {
-    inputSize: 13, // age, bmi, op_time, blood_loss, stage_IIB, stage_IIIA, ... (one-hot)
+    inputSize: 12, // age, bmi, op_time, blood_loss, stage_IIB, stage_IIIA, ... (one-hot)
     layers: [
       { units: 64, activation: 'relu', dropout: 0.3 },
       { units: 32, activation: 'relu', dropout: 0.2 },

@@ -21,7 +21,10 @@ describe('Platform Surgery-Onko-SSV API Tests', () => {
 
   describe('GET /api/v1/info', () => {
     it('should return platform information', async () => {
-      const response = await request(app).get('/api/v1/info');
+      process.env.API_TOKEN = 'test-token';
+      const response = await request(app)
+        .get('/api/v1/info')
+        .set('Authorization', 'Bearer test-token');
       
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('name', 'Platform-Surgery-Onko-SSV');
