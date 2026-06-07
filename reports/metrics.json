@@ -1,13 +1,13 @@
 {
   "auc": 0,
-  "accuracy": 1,
-  "precision": 1,
-  "recall": 1,
-  "f1": 1,
+  "accuracy": 0.728,
+  "precision": 0.7790697674418605,
+  "recall": 0.3641304347826087,
+  "f1": 0.4962962962962964,
   "confusion_matrix": {
-    "tp": 2,
-    "fp": 0,
-    "tn": 3,
-    "fn": 0
+    "tp": 67,
+    "fp": 19,
+    "tn": 297,
+    "fn": 117
   }
 }

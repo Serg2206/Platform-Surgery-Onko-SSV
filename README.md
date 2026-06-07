@@ -91,16 +91,15 @@ PORT=3000
 ### Получение предсказаний модели
 
 ```bash
-curl -X POST http://localhost:3000/predict \
+curl -X POST http://localhost:3000/api/v1/predict \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -d '{
     "age": 65,
-    "tumorSize": 4.5,
-    "stage": 3,
-    "lyesionCount": 8,
-    "tumorMarker": 120.5,
-    "vascularInvasion": 1
+    "sex": "M",
+    "bmi": 24.5,
+    "tumor_stage": "IIIA",
+    "surgery_type": "open"
   }'
 ```
 

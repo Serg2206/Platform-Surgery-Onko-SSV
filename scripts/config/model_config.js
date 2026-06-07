@@ -1,7 +1,7 @@
 // scripts/config/model_config.js
 module.exports = {
   // Путь к данным (может быть изменен через аргументы командной строки)
-  DATA_PATH: './data/gastrectomy_patients.json',
+  DATA_PATH: './data/gastrectomy_patients_extended.json',
   MODEL_SAVE_PATH: './models/gastrectomy_model',
   SCALER_SAVE_PATH: './models/scaler.json',
   METRICS_SAVE_PATH: './reports/metrics.json',

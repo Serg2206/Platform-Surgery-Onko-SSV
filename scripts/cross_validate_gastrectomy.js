@@ -11,7 +11,13 @@
 
 const tf = require('@tensorflow/tfjs-node');
 const fs = require('fs').promises;
-const { loadAndPreprocessData, createModel, trainModel } = require('./train_gastrectomy_model');
+const path = require('path');
+
+// Импорт модулей
+const DataPreprocessor = require('./utils/data_preprocessor');
+const ModelArchitecture = require('./utils/model_architecture');
+const { loadData } = require('./utils/data_loader');
+const config = require('./config/model_config');
 
 // Конфигурация кросс-валидации
 const CV_CONFIG = {
@@ -137,7 +143,7 @@ async function evaluateFold(model, xTest, yTest) {
   const pairs = predictions.map((pred, i) => ({
     pred: pred[0],
     label: labels[i][0]
-  })).sort((a, b) => b.pred - a.pred);
+  })).sort((a, b) => a.pred - b.pred);
   
   let positives = 0, negatives = 0, sumRanks = 0;
   pairs.forEach((pair, i) => {
@@ -176,18 +182,24 @@ async function runCrossValidation() {
   
   try {
     // 1. Загрузка данных
-    const { xs, ys } = await loadAndPreprocessData();
+    console.log(`Loading data from ${config.DATA_PATH}`);
+    const rawData = await loadData(config.DATA_PATH);
+
+    // 2. Инициализация препроцессора и обработка данных
+    const preprocessor = new DataPreprocessor(config.FEATURE_COLUMNS, config.TARGET_COLUMN);
+    const { X: xs, y: ys } = await preprocessor.process(rawData);
+
     const labelsArray = await ys.arraySync();
     const flatLabels = labelsArray.map(l => l[0]);
     
-    // 2. Создание фолдов
+    // 3. Создание фолдов
     const folds = createStratifiedFolds(
       await xs.arraySync(),
       flatLabels,
       CV_CONFIG.nFolds
     );
     
-    // 3. Обучение и оценка на каждом фолде
+    // 4. Обучение и оценка на каждом фолде
     const foldResults = [];
     
     for (let foldIdx = 0; foldIdx < folds.length; foldIdx++) {
@@ -209,8 +221,13 @@ async function runCrossValidation() {
       );
       
       // Создание и обучение модели
-      const model = createModel(xs.shape[1]);
-      await trainModel(model, xTrain, yTrain);
+      const model = ModelArchitecture.createModel(config.MODEL_ARCHITECTURE);
+
+      await model.fit(xTrain, yTrain, {
+        epochs: config.TRAINING.epochs,
+        batchSize: config.TRAINING.batchSize,
+        verbose: 0 // Отключаем шумный вывод при КВ
+      });
       
       // Оценка
       const metrics = await evaluateFold(model, xTest, yTest);
