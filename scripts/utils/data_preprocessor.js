@@ -33,9 +33,24 @@ class DataPreprocessor {
       df = dfd.getDummies(df, { columns: colsToEncode });
     }
 
+    // Добавляем недостающие колонки (важно для inference)
+    if (this.featureColumns && this.fitted) {
+      for (const col of this.featureColumns) {
+        if (!df.columns.includes(col)) {
+          df = df.addColumn(col, new Array(df.shape[0]).fill(0));
+        }
+      }
+    }
+
     // 2. Выделение X и y
-    const X = df.loc({ columns: this.featureColumns });
-    const y = df.loc({ columns: [this.targetColumn] });
+    // Если featureColumns не заданы (inference с уже обученным scaler), используем все колонки
+    const X_cols = this.featureColumns || df.columns;
+    const X = df.loc({ columns: X_cols });
+
+    let y = null;
+    if (this.targetColumn && df.columns.includes(this.targetColumn)) {
+      y = df.loc({ columns: [this.targetColumn] });
+    }
 
     // 3. Нормализация StandardScaler
     let X_scaled;
@@ -52,9 +67,12 @@ class DataPreprocessor {
 
     // 4. Преобразование в тензоры tf
     const X_tensor = X_scaled.tensor.asType('float32');
-    const y_tensor = y.tensor.cast('bool').cast('float32');
+    let y_tensor = null;
+    if (y) {
+      y_tensor = y.tensor.cast('bool').cast('float32');
+    }
 
-    console.log(`Preprocessing complete. X shape: [${X_tensor.shape}], y shape: [${y_tensor.shape}]`);
+    console.log(`Preprocessing complete. X shape: [${X_tensor.shape}]${y_tensor ? `, y shape: [${y_tensor.shape}]` : ''}`);
     console.log(`Fitted scaler: ${this.fitted}`);
 
     return {
@@ -89,10 +107,23 @@ class DataPreprocessor {
   static async loadScaler(path) {
     const fs = require('fs').promises;
     const jsonStr = await fs.readFile(path, 'utf8');
-    const scalerJson = JSON.parse(jsonStr);
+    const params = JSON.parse(jsonStr);
     const scaler = new StandardScaler();
-    scaler.fromJSON(scalerJson);
-    return new DataPreprocessor(null, null, scaler);
+
+    // Восстанавливаем среднее и стандартное отклонение из нашего формата {mean, std}
+    if (params.mean && params.std) {
+      const tf = require('@tensorflow/tfjs-node');
+      // В среде Jest require может вызывать ошибки при асинхронной инициализации
+      if (tf.tensor1d) {
+        scaler.$mean = tf.tensor1d(params.mean);
+        scaler.$std = tf.tensor1d(params.std);
+      }
+    } else {
+      scaler.fromJSON(params);
+    }
+
+    const config = require('../config/model_config');
+    return new DataPreprocessor(config.FEATURE_COLUMNS, config.TARGET_COLUMN, scaler);
   }
 }
 

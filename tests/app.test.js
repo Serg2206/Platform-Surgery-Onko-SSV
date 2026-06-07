@@ -7,6 +7,11 @@ const app = require('../src/index');
 
 describe('Platform Surgery-Onko-SSV API Tests', () => {
   
+  beforeAll(async () => {
+    // Avoid background logs during tests
+    await app.initModel();
+  });
+
   describe('GET /health', () => {
     it('should return 200 and health status', async () => {
       const response = await request(app).get('/health');

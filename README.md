@@ -75,6 +75,12 @@ npm start
 npm test
 ```
 
+*   **Запуск в Docker**
+    ```bash
+    docker build -t surgery-onko-ssv .
+    docker run -p 3000:3000 --env API_TOKEN=your_token surgery-onko-ssv
+    ```
+
 ### Переменные окружения
 
 Создайте файл `.env` в корне проекта:
