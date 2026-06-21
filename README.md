@@ -1,3 +1,8 @@
+## Archived
+Этот репозиторий архивирован. Функционал включён в [surgical-research-platform-mvp](https://github.com/Serg2206/surgical-research-platform-mvp).
+
+---
+
 # Surgery-Onko-SSV
 
 Платформенный многомодульный научно-практический оригинальный репозиторий SSV.
