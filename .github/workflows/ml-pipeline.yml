@@ -1,0 +1,42 @@
+name: ML Pipeline Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify-ml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Generate dataset
+        run: python3 scripts/generate_extended_dataset.py
+
+      - name: Train model
+        run: node scripts/train_gastrectomy_model.js
+
+      - name: Run cross-validation
+        run: node scripts/cross_validate_gastrectomy.js
+
+      - name: Verify artifacts
+        run: |
+          ls -l models/
+          ls -l reports/metrics.json
+          ls -l results/cv_gastrectomy/cv_results.json

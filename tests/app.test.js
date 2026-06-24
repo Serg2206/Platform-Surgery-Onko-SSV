@@ -7,6 +7,11 @@ const app = require('../src/index');
 
 describe('Platform Surgery-Onko-SSV API Tests', () => {
   
+  beforeAll(async () => {
+    // Avoid background logs during tests
+    await app.initModel();
+  });
+
   describe('GET /health', () => {
     it('should return 200 and health status', async () => {
       const response = await request(app).get('/health');
@@ -21,7 +26,10 @@ describe('Platform Surgery-Onko-SSV API Tests', () => {
 
   describe('GET /api/v1/info', () => {
     it('should return platform information', async () => {
-      const response = await request(app).get('/api/v1/info');
+      process.env.API_TOKEN = 'test-token';
+      const response = await request(app)
+        .get('/api/v1/info')
+        .set('Authorization', 'Bearer test-token');
       
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('name', 'Platform-Surgery-Onko-SSV');

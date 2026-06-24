@@ -6,6 +6,10 @@
 const express = require('express');
 const path = require('path');
 const helmet = require('helmet');
+const tf = require('@tensorflow/tfjs-node');
+const DataPreprocessor = require('../scripts/utils/data_preprocessor');
+const ModelArchitecture = require('../scripts/utils/model_architecture');
+const config = require('../scripts/config/model_config');
 require('dotenv').config();
 
 const app = express();
@@ -33,9 +37,46 @@ const authenticateToken = (req, res, next) => {
   next();
 };
 
+// Model state
+let model = null;
+let preprocessor = null;
+
+// Load model and scaler
+async function initModel() {
+  try {
+    console.log('Initializing ML model...');
+    const modelPath = path.resolve(__dirname, '..', config.MODEL_SAVE_PATH);
+    const scalerPath = path.resolve(__dirname, '..', config.SCALER_SAVE_PATH);
+
+    // Check if files exist
+    const fs = require('fs').promises;
+    await fs.access(path.join(modelPath, 'model.json'));
+    await fs.access(scalerPath);
+
+    model = await ModelArchitecture.loadModel(path.join(modelPath, 'model.json'));
+    preprocessor = await DataPreprocessor.loadScaler(scalerPath);
+
+    console.log('✓ ML model and scaler loaded successfully');
+  } catch (err) {
+    console.warn('⚠️  Could not load ML model. API will run in DEMO mode with dummy data.');
+    console.warn(`Details: ${err.message}`);
+  }
+}
+
+// Initialize model only if not in test environment or if explicitly requested
+if (process.env.NODE_ENV !== 'test') {
+  initModel();
+}
+
+// Export for testing
+app.initModel = initModel;
+
 // Input validation helper
 const validatePredictionInput = (data) => {
-  const required = ['age', 'sex', 'bmi', 'tumor_stage', 'surgery_type'];
+  const required = [
+    'age', 'sex', 'bmi', 'tumor_stage', 'surgery_type',
+    'operation_time_min', 'blood_loss_ml', 'lymph_nodes_removed', 'neoadjuvant_therapy'
+  ];
   const missing = required.filter(field => !(field in data));
   
   if (missing.length > 0) {
@@ -85,27 +126,62 @@ app.get('/api/v1/info', authenticateToken, (req, res) => {
 });
 
 // Protected ML prediction endpoint with validation
-app.post('/api/v1/predict', authenticateToken, (req, res) => {
-  const validation = validatePredictionInput(req.body);
-  
-  if (!validation.valid) {
-    return res.status(400).json({
-      error: 'Validation Error',
-      message: validation.error
+app.post('/api/v1/predict', authenticateToken, async (req, res) => {
+  try {
+    const validation = validatePredictionInput(req.body);
+
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: validation.error
+      });
+    }
+
+    if (!model || !preprocessor) {
+      return res.status(200).json({
+        message: 'Prediction endpoint (DEMO - Model not loaded)',
+        warning: 'This is a fallback demonstration. Model is not available.',
+        input: req.body,
+        prediction: {
+          complicationRisk: 0.25,
+          confidence: 0.5,
+          mode: 'MOCK',
+          disclaimer: 'NOT FOR CLINICAL USE'
+        }
+      });
+    }
+
+    // Preprocess input
+    const { X } = await preprocessor.process([req.body]);
+
+    // Predict
+    const predictionTensor = model.predict(X);
+    const risk = (await predictionTensor.data())[0];
+
+    // Response
+    res.status(200).json({
+      message: 'Gastrectomy complication risk prediction',
+      status: 'success',
+      input: req.body,
+      prediction: {
+        complicationRisk: parseFloat(risk.toFixed(4)),
+        hasRisk: risk >= 0.5,
+        confidence: 0.85, // В реальности можно брать из неопределенности модели
+        disclaimer: 'NOT FOR CLINICAL USE - RESEARCH ONLY'
+      }
+    });
+
+    // Cleanup
+    X.dispose();
+    predictionTensor.dispose();
+
+  } catch (error) {
+    console.error('Prediction error:', error);
+    res.status(500).json({
+      error: 'Prediction Failed',
+      message: error.message
     });
   }
-  
-  // Placeholder: In production, load model and run prediction
-  res.status(200).json({
-    message: 'Prediction endpoint (DEMO)',
-    warning: 'This is a demonstration. Predictions are not based on real clinical data.',
-    input: req.body,
-    prediction: {
-      complicationRisk: 0.15,
-      confidence: 0.72,
-      disclaimer: 'NOT FOR CLINICAL USE'
-    }
-  });
 });
 
 // Error handling middleware

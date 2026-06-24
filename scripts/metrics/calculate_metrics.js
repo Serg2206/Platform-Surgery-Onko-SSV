@@ -31,13 +31,19 @@ class MetricsCalculator {
     const recall = tp / (tp + fn) || 0;
     const f1 = 2 * (precision * recall) / (precision + recall) || 0;
 
-    // AUC (используем Promise для async)
-    const auc = await tf.metrics.auc(y_true, y_pred).data();
+    // AUC (tf.metrics.auc может отсутствовать в некоторых версиях tfjs-node)
+    let aucValue = 0;
+    try {
+      const auc = await tf.metrics.auc(y_true, y_pred).data();
+      aucValue = auc[0];
+    } catch (e) {
+      console.warn('tf.metrics.auc is not available, setting to 0');
+    }
 
-    console.log(`Metrics - AUC: ${auc[0].toFixed(4)}, Accuracy: ${accuracy.toFixed(4)}, Precision: ${precision.toFixed(4)}, Recall: ${recall.toFixed(4)}, F1: ${f1.toFixed(4)}`);
+    console.log(`Metrics - AUC: ${aucValue.toFixed(4)}, Accuracy: ${accuracy.toFixed(4)}, Precision: ${precision.toFixed(4)}, Recall: ${recall.toFixed(4)}, F1: ${f1.toFixed(4)}`);
 
     const metrics = {
-      auc: auc[0],
+      auc: aucValue,
       accuracy: accuracy,
       precision: precision,
       recall: recall,

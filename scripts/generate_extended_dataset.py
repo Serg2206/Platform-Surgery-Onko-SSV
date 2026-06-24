@@ -9,12 +9,14 @@ Output: ../data/gastrectomy_patients_extended.json
 
 import json
 import random
-import numpy as np
+import math
 from pathlib import Path
 
 # Set random seed for reproducibility
 random.seed(42)
-np.random.seed(42)
+
+def clip(n, smallest, largest):
+    return max(smallest, min(n, largest))
 
 def generate_patient(patient_id):
     """
@@ -25,13 +27,13 @@ def generate_patient(patient_id):
     - Laparoscopic: ~50-60% for early stages, ~30% for advanced
     """
     # Age distribution (mean 70, std 10)
-    age = int(np.clip(np.random.normal(70, 10), 45, 90))
+    age = int(clip(random.normalvariate(70, 10), 45, 90))
     
     # Sex distribution (M:F ratio ~2:1 in gastric cancer)
     sex = random.choices(['M', 'F'], weights=[65, 35])[0]
     
     # BMI distribution (mean 23-24 for Asian population, slightly higher for Western)
-    bmi = round(np.clip(np.random.normal(24.0, 3.5), 17.0, 35.0), 1)
+    bmi = round(clip(random.normalvariate(24.0, 3.5), 17.0, 35.0), 1)
     
     # Tumor stage distribution
     stage = random.choices(
@@ -51,17 +53,18 @@ def generate_patient(patient_id):
     
     # Operation time (laparoscopic typically longer but less blood loss)
     if surgery_type == 'laparoscopic':
-        op_time = int(np.random.normal(170, 25))
-        blood_loss = int(np.clip(np.random.gamma(2, 40), 50, 300))
+        op_time = int(random.normalvariate(170, 25))
+        # Approximation of gamma distribution using multiple exponentials or just normal for simplicity
+        blood_loss = int(clip(random.normalvariate(100, 40), 50, 300))
     else:
-        op_time = int(np.random.normal(230, 30))
-        blood_loss = int(np.clip(np.random.gamma(3, 80), 150, 600))
+        op_time = int(random.normalvariate(230, 30))
+        blood_loss = int(clip(random.normalvariate(300, 100), 150, 600))
     
     # Neoadjuvant therapy (more common for advanced stages)
     neoadjuvant = stage in ['IIIA', 'IIIB', 'IV'] and random.random() < 0.75
     
     # Lymph nodes removed (D2 dissection standard: 25-45 nodes)
-    lymph_nodes = int(np.clip(np.random.normal(32, 8), 15, 50))
+    lymph_nodes = int(clip(random.normalvariate(32, 8), 15, 50))
     
     # Complications (higher for advanced stage, open surgery, elderly)
     complication_prob = 0.25  # Base rate

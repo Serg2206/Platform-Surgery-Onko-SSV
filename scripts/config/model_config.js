@@ -1,14 +1,14 @@
 // scripts/config/model_config.js
 module.exports = {
   // Путь к данным (может быть изменен через аргументы командной строки)
-  DATA_PATH: './data/gastrectomy_patients.json',
+  DATA_PATH: './data/gastrectomy_patients_extended.json',
   MODEL_SAVE_PATH: './models/gastrectomy_model',
   SCALER_SAVE_PATH: './models/scaler.json',
   METRICS_SAVE_PATH: './reports/metrics.json',
   
   // Параметры модели
   MODEL_ARCHITECTURE: {
-    inputSize: 13, // age, bmi, op_time, blood_loss, stage_IIB, stage_IIIA, ... (one-hot)
+    inputSize: 12, // age, bmi, op_time, blood_loss, stage_IIB, stage_IIIA, ... (one-hot)
     layers: [
       { units: 64, activation: 'relu', dropout: 0.3 },
       { units: 32, activation: 'relu', dropout: 0.2 },
